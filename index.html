@@ -193,25 +193,84 @@ function startLoanSession() {
       });
     }
 
-    function onScanSuccess(code) {
-      scanner.stop().then(() => {
-        document.getElementById("result").textContent =
-          "Recherche du livre " + code + "...";
+   function onScanSuccess(code) {
+  scanner.stop().then(() => {
+    document.getElementById("result").textContent =
+      "Recherche du livre " + code + "...";
 
-        const script = document.createElement("script");
+    const script = document.createElement("script");
 
-        window.handleBookSearch = function(data) {
+    window.handleBookSearch = function(data) {
+      script.remove();
+      delete window.handleBookSearch;
+
+      if (data.found) {
+        const alreadyAdded = selectedBooks.some(
+          book => book.code === data.book.code
+        );
+
+        if (alreadyAdded) {
           document.getElementById("result").textContent =
-            data.found
-              ? "Livre reconnu : " + data.book.title +
-                " — " + data.book.author +
-                " (" + data.book.code + ")"
-              : data.message || "Livre introuvable.";
+            "Ce livre est déjà dans la liste.";
+        } else {
+          selectedBooks.push(data.book);
 
-          script.remove();
-          delete window.handleBookSearch;
-        };
+          const list = document.getElementById("bookList");
+          list.innerHTML = "";
 
+          selectedBooks.forEach(book => {
+            const item = document.createElement("p");
+            item.textContent =
+              book.title + " — " + book.author +
+              " (" + book.code + ")";
+            list.appendChild(item);
+          });
+
+          document.getElementById("validateLoans").hidden = false;
+
+          document.getElementById("result").textContent =
+            "Livre ajouté ! Tu peux scanner le suivant.";
+        }
+      } else {
+        document.getElementById("result").textContent =
+          data.message || "Livre introuvable.";
+      }
+
+      Html5Qrcode.getCameras().then(cameras => {
+        if (!cameras.length) return;
+
+        const camera = cameras.find(c =>
+          /back|arrière|environment/i.test(c.label)
+        ) || cameras[cameras.length - 1];
+
+        scanner.start(
+          camera.id,
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          onScanSuccess
+        );
+      }).catch(error => {
+        document.getElementById("result").textContent =
+          "Impossible de relancer la caméra : " + error;
+      });
+    };
+
+    script.onerror = function() {
+      document.getElementById("result").textContent =
+        "Impossible de contacter la bibliothèque.";
+      script.remove();
+      delete window.handleBookSearch;
+    };
+
+    script.src =
+      API_URL +
+      "?action=searchBook" +
+      "&code=" + encodeURIComponent(code) +
+      "&pin=" + encodeURIComponent(accessCode) +
+      "&callback=handleBookSearch";
+
+    document.body.appendChild(script);
+  });
+}
         script.onerror = function() {
           document.getElementById("result").textContent =
             "Impossible de contacter la bibliothèque.";
