@@ -93,7 +93,21 @@
         }
 
         students = data.students || [];
+const studentSelect = document.getElementById("studentSelect");
 
+studentSelect.innerHTML =
+  '<option value="">Sélectionner un élève</option>';
+
+students.forEach(student => {
+  const option = document.createElement("option");
+  option.value = student.id;
+  option.textContent =
+    student.prenom + " " + student.nom +
+    (student.classe ? " — " + student.classe : "");
+  studentSelect.appendChild(option);
+});
+
+document.getElementById("studentArea").hidden = false;
         document.getElementById("accessCode").disabled = true;
         button.hidden = true;
         document.getElementById("instruction").hidden = false;
