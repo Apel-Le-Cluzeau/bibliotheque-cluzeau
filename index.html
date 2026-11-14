@@ -1,0 +1,67 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scanner bibliothèque Cluzeau</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+      background: #f4f7f8;
+    }
+    h2 { color: #087e8b; }
+    #reader {
+      width: 100%;
+      max-width: 450px;
+      margin: 20px auto;
+    }
+    #result {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Bibliothèque du Cluzeau</h2>
+  <p>Place le QR code du livre devant la caméra.</p>
+
+  <div id="reader"></div>
+  <div id="result"></div>
+
+  <script>
+    const scanner = new Html5Qrcode("reader");
+
+    function onScanSuccess(code) {
+      scanner.stop().then(() => {
+        document.getElementById("result").textContent =
+          "Livre reconnu : " + code;
+      });
+    }
+
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras.length) {
+        const camera = cameras.find(c =>
+          /back|arrière|environment/i.test(c.label)
+        ) || cameras[cameras.length - 1];
+
+        scanner.start(
+          camera.id,
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          onScanSuccess
+        );
+      } else {
+        document.getElementById("result").textContent =
+          "Aucune caméra détectée.";
+      }
+    }).catch(error => {
+      document.getElementById("result").textContent =
+        "Impossible d'accéder à la caméra : " + error;
+    });
+  </script>
+</body>
+</html>
