@@ -28,12 +28,31 @@
 </head>
 <body>
   <h2>Bibliothèque du Cluzeau</h2>
-  <p>Place le QR code du livre devant la caméra.</p>
+  <p>Accès réservé aux professeurs.</p>
+<input type="password" id="accessCode" placeholder="Code confidentiel">
+<button onclick="connectLibrary()">Se connecter</button>
+<p>Place le QR code du livre devant la caméra.</p>
 
   <div id="reader"></div>
   <div id="result"></div>
 
-  <script>
+<script>
+    let accessCode = "";
+
+    function connectLibrary() {
+      accessCode = document.getElementById("accessCode").value.trim();
+
+      if (!accessCode) {
+        document.getElementById("result").textContent =
+          "Saisis le code confidentiel.";
+        return;
+      }
+
+      document.getElementById("result").textContent =
+        "Vérification du code...";
+    }
+
+    const scanner = new Html5Qrcode("reader");    
     const scanner = new Html5Qrcode("reader");
   
 function onScanSuccess(code) {
