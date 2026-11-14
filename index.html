@@ -135,7 +135,7 @@ function startLoanSession() {
     return;
   }
 
-  selectedStudentId = select.value;
+  window.selectedStudentId = select.value;
   selectedBooks = [];
 
   document.getElementById("result").textContent =
@@ -275,7 +275,7 @@ function startLoanSession() {
 function validateLoans() {
    alert("1 - Fonction démarrée");
   alert("Élève : " + selectedStudentId + " | Nombre de livres : " + selectedBooks.length);
-  if (!selectedStudentId || selectedBooks.length === 0) {
+if (!window.selectedStudentId || selectedBooks.length === 0) {
     document.getElementById("result").textContent =
       "Choisis un élève et ajoute au moins un livre.";
     return;
@@ -342,7 +342,7 @@ function validateLoans() {
     script.src =
       API_URL +
       "?action=createLoan" +
-      "&studentId=" + encodeURIComponent(selectedStudentId) +
+     "&studentId=" + encodeURIComponent(window.selectedStudentId) +
       "&code=" + encodeURIComponent(book.code) +
       "&condition=" + encodeURIComponent(book.condition || "Bon état") +
       "&pin=" + encodeURIComponent(accessCode) +
