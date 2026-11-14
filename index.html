@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Scanner bibliothèque Cluzeau</title>
+  <title>Bibliothèque du Cluzeau</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     body {
@@ -20,80 +20,116 @@
       margin: 20px auto;
     }
     #result {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: bold;
       margin: 20px;
+    }
+    input, button {
+      font-size: 18px;
+      padding: 12px;
+      margin: 8px;
     }
   </style>
 </head>
 <body>
   <h2>Bibliothèque du Cluzeau</h2>
+
   <p>Accès réservé aux professeurs.</p>
-<input type="password" id="accessCode" placeholder="Code confidentiel">
-<button onclick="connectLibrary()">Se connecter</button>
-<p>Place le QR code du livre devant la caméra.</p>
+
+  <input type="password" id="accessCode"
+         placeholder="Code confidentiel">
+  <button id="loginButton" onclick="connectLibrary()">
+    Se connecter
+  </button>
+
+  <p id="instruction" hidden>
+    Place le QR code du livre devant la caméra.
+  </p>
 
   <div id="reader"></div>
   <div id="result"></div>
 
-<script>
+  <script>
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbzftNyIqkjBs67nKROMNvMxDfnPuTNwQzn7_vjb2rcj2VEMmIIzI96kFK2P0Hw2g0Ekgg/exec";
+
     let accessCode = "";
+    let students = [];
+    let scanner = null;
 
     function connectLibrary() {
-      accessCode = document.getElementById("accessCode").value.trim();
+      accessCode =
+        document.getElementById("accessCode").value.trim();
+
+      const result = document.getElementById("result");
+      const button = document.getElementById("loginButton");
 
       if (!accessCode) {
-        document.getElementById("result").textContent =
-          "Saisis le code confidentiel.";
+        result.textContent = "Saisis le code confidentiel.";
         return;
       }
 
-      document.getElementById("result").textContent =
-        "Vérification du code...";
+      button.disabled = true;
+      result.textContent = "Vérification du code...";
+
+      const script = document.createElement("script");
+
+      window.handleLibraryLogin = function(data) {
+        script.remove();
+        delete window.handleLibraryLogin;
+        button.disabled = false;
+
+        if (!data.success) {
+          result.textContent =
+            data.message || "Code confidentiel incorrect.";
+          return;
+        }
+
+        students = data.students || [];
+
+        document.getElementById("accessCode").disabled = true;
+        button.hidden = true;
+        document.getElementById("instruction").hidden = false;
+
+        result.textContent =
+          "Connexion réussie. Ouverture de la caméra...";
+
+        startScanner();
+      };
+
+      script.onerror = function() {
+        result.textContent =
+          "Impossible de contacter la bibliothèque.";
+        button.disabled = false;
+        script.remove();
+        delete window.handleLibraryLogin;
+      };
+
+      script.src =
+        API_URL +
+        "?action=getStudents" +
+        "&pin=" + encodeURIComponent(accessCode) +
+        "&callback=handleLibraryLogin";
+
+      document.body.appendChild(script);
     }
 
-    const scanner = new Html5Qrcode("reader");    
-    const scanner = new Html5Qrcode("reader");
-  
-function onScanSuccess(code) {
-  scanner.stop().then(() => {
-    document.getElementById("result").textContent =
-      "Recherche du livre " + code + "...";
+    function startScanner() {
+      if (typeof Html5Qrcode === "undefined") {
+        document.getElementById("result").textContent =
+          "Le scanner ne peut pas être chargé.";
+        return;
+      }
 
-    const script = document.createElement("script");
-    const callbackName = "handleBookSearch";
+      scanner = new Html5Qrcode("reader");
 
-    window[callbackName] = function(result) {
-      document.getElementById("result").textContent =
-        result.found
-          ? "Livre reconnu : " + result.book.title +
-            " — " + result.book.author +
-            " (" + result.book.code + ")"
-          : result.message || "Livre introuvable.";
+      Html5Qrcode.getCameras().then(cameras => {
+        if (!cameras.length) {
+          document.getElementById("result").textContent =
+            "Aucune caméra détectée.";
+          return;
+        }
 
-      script.remove();
-      delete window[callbackName];
-    };
-
-    script.onerror = function() {
-      document.getElementById("result").textContent =
-        "Impossible de contacter la bibliothèque.";
-      script.remove();
-      delete window[callbackName];
-    };
-
-    script.src =
-      "https://script.google.com/macros/s/AKfycbzftNyIqkjBs67nKROMNvMxDfnPuTNwQzn7_vjb2rcj2VEMmIIzI96kFK2P0Hw2g0Ekgg/exec" +
-      "?action=searchBook&code=" + encodeURIComponent(code) +
-      "&callback=" + callbackName;
-
-    document.body.appendChild(script);
-  });
-}
-
-
-    Html5Qrcode.getCameras().then(cameras => {
-      if (cameras.length) {
         const camera = cameras.find(c =>
           /back|arrière|environment/i.test(c.label)
         ) || cameras[cameras.length - 1];
@@ -103,14 +139,48 @@ function onScanSuccess(code) {
           { fps: 10, qrbox: { width: 250, height: 250 } },
           onScanSuccess
         );
-      } else {
+      }).catch(error => {
         document.getElementById("result").textContent =
-          "Aucune caméra détectée.";
-      }
-    }).catch(error => {
-      document.getElementById("result").textContent =
-        "Impossible d'accéder à la caméra : " + error;
-    });
+          "Impossible d'accéder à la caméra : " + error;
+      });
+    }
+
+    function onScanSuccess(code) {
+      scanner.stop().then(() => {
+        document.getElementById("result").textContent =
+          "Recherche du livre " + code + "...";
+
+        const script = document.createElement("script");
+
+        window.handleBookSearch = function(data) {
+          document.getElementById("result").textContent =
+            data.found
+              ? "Livre reconnu : " + data.book.title +
+                " — " + data.book.author +
+                " (" + data.book.code + ")"
+              : data.message || "Livre introuvable.";
+
+          script.remove();
+          delete window.handleBookSearch;
+        };
+
+        script.onerror = function() {
+          document.getElementById("result").textContent =
+            "Impossible de contacter la bibliothèque.";
+          script.remove();
+          delete window.handleBookSearch;
+        };
+
+        script.src =
+          API_URL +
+          "?action=searchBook" +
+          "&code=" + encodeURIComponent(code) +
+          "&pin=" + encodeURIComponent(accessCode) +
+          "&callback=handleBookSearch";
+
+        document.body.appendChild(script);
+      });
+    }
   </script>
 </body>
 </html>
