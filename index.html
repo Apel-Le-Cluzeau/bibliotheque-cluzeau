@@ -309,9 +309,14 @@ function validateLoans() {
       script.remove();
       delete window[callbackName];
 
-      if (data && data.code) {
-        successCount++;
-      }
+  if (data && data.success === true && data.data && data.data.code) {
+  successCount++;
+} else {
+  document.getElementById("result").textContent =
+    "Erreur : " + (data.message || "Emprunt non enregistré.");
+  button.disabled = false;
+  return;
+}
 
       index++;
       sendNextLoan();
