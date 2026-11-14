@@ -119,7 +119,24 @@ document.getElementById("studentArea").hidden = false;
 
         result.textContent =
           "Connexion réussie. Ouverture de la caméra...";
+        
+function startLoanSession() {
+  const select = document.getElementById("studentSelect");
 
+  if (!select.value) {
+    document.getElementById("result").textContent =
+      "Choisis d'abord un élève.";
+    return;
+  }
+
+  selectedStudentId = select.value;
+  selectedBooks = [];
+
+  document.getElementById("result").textContent =
+    "Élève sélectionné. Tu peux scanner ses livres.";
+
+  startScanner();
+}
         startScanner();
       };
 
