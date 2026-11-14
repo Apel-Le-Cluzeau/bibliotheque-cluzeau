@@ -271,23 +271,7 @@ function startLoanSession() {
     document.body.appendChild(script);
   });
 }
-        script.onerror = function() {
-          document.getElementById("result").textContent =
-            "Impossible de contacter la bibliothèque.";
-          script.remove();
-          delete window.handleBookSearch;
-        };
 
-        script.src =
-          API_URL +
-          "?action=searchBook" +
-          "&code=" + encodeURIComponent(code) +
-          "&pin=" + encodeURIComponent(accessCode) +
-          "&callback=handleBookSearch";
-
-        document.body.appendChild(script);
-      });
-    }
   </script>
 </body>
 </html>
