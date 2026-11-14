@@ -271,7 +271,78 @@ function startLoanSession() {
     document.body.appendChild(script);
   });
 }
+function validateLoans() {
+  if (!selectedStudentId || selectedBooks.length === 0) {
+    document.getElementById("result").textContent =
+      "Choisis un élève et ajoute au moins un livre.";
+    return;
+  }
 
+  const button = document.getElementById("validateLoans");
+  button.disabled = true;
+
+  let index = 0;
+  let successCount = 0;
+  const total = selectedBooks.length;
+
+  document.getElementById("result").textContent =
+    "Enregistrement des emprunts...";
+
+  function sendNextLoan() {
+    if (index >= total) {
+      document.getElementById("result").textContent =
+        successCount + " emprunt(s) enregistré(s) sur " + total + ".";
+
+      selectedBooks = [];
+      document.getElementById("bookList").innerHTML = "";
+      button.hidden = true;
+      button.disabled = false;
+      return;
+    }
+
+    const book = selectedBooks[index];
+    const callbackName = "handleLoanResult";
+
+    const script = document.createElement("script");
+
+    window[callbackName] = function(data) {
+      script.remove();
+      delete window[callbackName];
+
+      if (data && data.code) {
+        successCount++;
+      }
+
+      index++;
+      sendNextLoan();
+    };
+
+    script.onerror = function() {
+      script.remove();
+      delete window[callbackName];
+
+      document.getElementById("result").textContent =
+        "Erreur lors de l'enregistrement du livre " + book.code +
+        ". Arrêt de la validation. " + successCount +
+        " emprunt(s) enregistré(s) sur " + total + ".";
+
+      button.disabled = false;
+    };
+
+    script.src =
+      API_URL +
+      "?action=createLoan" +
+      "&studentId=" + encodeURIComponent(selectedStudentId) +
+      "&code=" + encodeURIComponent(book.code) +
+      "&condition=" + encodeURIComponent(book.condition || "Bon état") +
+      "&pin=" + encodeURIComponent(accessCode) +
+      "&callback=" + callbackName;
+
+    document.body.appendChild(script);
+  }
+
+  sendNextLoan();
+}
   </script>
 </body>
 </html>
